@@ -122,39 +122,30 @@ def format_data(token):
         print(f"Required columns are missing in {file_path}. Skipping this file.")
 
 def train_model(token):
-    # Load the token price data
-    price_data = pd.read_csv(os.path.join(data_base_path, f"{token.lower()}_price_data.csv"))
-    df = pd.DataFrame()
+    # Завантаження даних для токена (наприклад, ETH)
+    price_data = pd.read_csv(f'/app/data/{token.lower()}_price_data.csv')
+    
+    # Перетворення стовпця з датою на DatetimeIndex
+    price_data['date'] = pd.to_datetime(price_data['date'])
+    price_data.set_index('date', inplace=True)
 
-    # Convert 'date' to datetime
-    price_data["date"] = pd.to_datetime(price_data["date"])
+    # Ресемплінг даних із використанням '10min' замість застарілого '10T'
+    df = price_data.resample('10min').mean()
+    df = df.dropna()  # Видаляємо NaN значення
 
-    # Set the date column as the index for resampling
-    price_data.set_index("date", inplace=True)
-
-    # Resample the data to 10-minute frequency and compute the mean price
-    df = price_data.resample('10T').mean()
-
-    # Prepare data for Linear Regression
-    df = df.dropna()  # Loại bỏ các giá trị NaN (nếu có)
-    X = np.array(range(len(df))).reshape(-1, 1)  # Sử dụng chỉ số thời gian làm đặc trưng
-    y = df['close'].values  # Sử dụng giá đóng cửa làm mục tiêu
-
-    # Khởi tạo mô hình Linear Regression
-    input_dim = X.shape[1]  # Задає кількість ознак у ваших вхідних даних
+    X = np.array(range(len(df))).reshape(-1, 1)
+    y = df['close'].values
 
     model = Sequential()
-    model.add(Dense(256, activation='relu', input_shape=(input_dim,)))  # Використання input_dim для визначення розміру вхідних даних
-    model.add(Dropout(0.5))  # Додавання Dropout для запобігання перенавчанню
-    model.add(Dense(128, activation='relu'))
+    model.add(Dense(128, activation='relu', input_shape=(X.shape[1],)))
     model.add(Dense(64, activation='relu'))
-    model.add(Dense(1))
+    model.add(Dense(32, activation='relu'))
+    model.add(Dense(1))  # Вихідний шар для прогнозування
 
-    model.compile(optimizer='adam', loss='mae', metrics=['mean_absolute_error'])
+    model.compile(optimizer='adam', loss='mse')
 
     # Навчання моделі
     model.fit(X, y, epochs=50, batch_size=32)
-
     # Dự đoán giá tiếp theo
     next_time_index = np.array([[len(df)]])  # Giá trị thời gian tiếp theo
     predicted_price = model.predict(next_time_index)[0]  # Dự đoán giá
