@@ -125,11 +125,13 @@ def train_model(token):
     # Завантаження даних для токена (наприклад, ETH)
     price_data = pd.read_csv(f'/app/data/{token.lower()}_price_data.csv')
     
-    # Ваш код для підготовки даних X і y
-    # Наприклад, якщо X - це часові ряди, створіть X на основі вашого price_data
-    X = np.array(range(len(price_data))).reshape(-1, 1)  # Це лише приклад; налаштуйте під ваші дані
-    y = price_data['close'].values  # Ваші цільові дані
-
+    # Підготовка даних X і y
+    df = price_data.resample('10T').mean()  # Наприклад, ви використовуєте ресемплінг для створення DataFrame df
+    df = df.dropna()  # Видаляємо NaN значення
+    
+    X = np.array(range(len(df))).reshape(-1, 1)  # Ваша матриця ознак
+    y = df['close'].values  # Цільові значення
+    
     # Додаємо третій вимір для GRU, якщо ваші дані є одномірними
     X = np.expand_dims(X, axis=-1)  # Тепер X має розміри (num_samples, timesteps, 1)
 
@@ -145,21 +147,11 @@ def train_model(token):
     # Навчання моделі
     model.fit(X, y, epochs=50, batch_size=32)
 
-    # Dự đoán giá tiếp theo
-    next_time_index = np.array([[len(df)]])  # Giá trị thời gian tiếp theo
-    predicted_price = model.predict(next_time_index)[0]  # Dự đoán giá
-
-    # Xác định khoảng dao động xung quanh giá dự đoán
-    fluctuation_range = 0.001 * predicted_price  # Lấy 0.1% của giá dự đoán làm khoảng dao động
-    min_price = predicted_price - fluctuation_range
-    max_price = predicted_price + fluctuation_range
-
-    # Chọn ngẫu nhiên một giá trị trong khoảng dao động
-    price_predict = random.uniform(min_price, max_price)
-    forecast_price[token] = price_predict
-
-    print(f"Predicted_price: {predicted_price}, Min_price: {min_price}, Max_price: {max_price}")
-    print(f"Forecasted price for {token}: {forecast_price[token]}")
+    # Прогнозування наступного значення
+    next_time_index = np.array([[len(df)]])  # Наступний часовий крок
+    predicted_price = model.predict(next_time_index)[0]  # Прогноз ціни
+    
+    print(f"Predicted next price: {predicted_price}")
 
 def update_data():
     tokens = ["ETH", "BTC", "SOL"]
