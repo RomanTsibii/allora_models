@@ -125,13 +125,17 @@ def train_model(token):
     # Завантаження даних для токена (наприклад, ETH)
     price_data = pd.read_csv(f'/app/data/{token.lower()}_price_data.csv')
     
-    # Підготовка даних X і y
-    df = price_data.resample('10T').mean()  # Наприклад, ви використовуєте ресемплінг для створення DataFrame df
+    # Перетворення стовпця з датою на DatetimeIndex
+    price_data['date'] = pd.to_datetime(price_data['date'])  # Заміна 'date' на фактичну назву вашого стовпця з датою
+    price_data.set_index('date', inplace=True)
+
+    # Ресемплінг даних
+    df = price_data.resample('10T').mean()
     df = df.dropna()  # Видаляємо NaN значення
-    
+
     X = np.array(range(len(df))).reshape(-1, 1)  # Ваша матриця ознак
     y = df['close'].values  # Цільові значення
-    
+
     # Додаємо третій вимір для LSTM, якщо ваші дані є одномірними
     X = np.expand_dims(X, axis=-1)  # Тепер X має розміри (num_samples, timesteps, 1)
 
