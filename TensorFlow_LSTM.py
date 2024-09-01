@@ -126,18 +126,18 @@ def train_model(token):
     price_data = pd.read_csv(f'/app/data/{token.lower()}_price_data.csv')
     
     # Перетворення стовпця з датою на DatetimeIndex
-    price_data['date'] = pd.to_datetime(price_data['date'])  # Заміна 'date' на фактичну назву вашого стовпця з датою
+    price_data['date'] = pd.to_datetime(price_data['date'])
     price_data.set_index('date', inplace=True)
 
-    # Ресемплінг даних
-    df = price_data.resample('10T').mean()
+    # Ресемплінг даних із використанням '10min' замість застарілого '10T'
+    df = price_data.resample('10min').mean()
     df = df.dropna()  # Видаляємо NaN значення
 
-    X = np.array(range(len(df))).reshape(-1, 1)  # Ваша матриця ознак
-    y = df['close'].values  # Цільові значення
+    X = np.array(range(len(df))).reshape(-1, 1)
+    y = df['close'].values
 
     # Додаємо третій вимір для LSTM, якщо ваші дані є одномірними
-    X = np.expand_dims(X, axis=-1)  # Тепер X має розміри (num_samples, timesteps, 1)
+    X = np.expand_dims(X, axis=-1)
 
     timesteps = X.shape[1]  # Визначає кількість часових кроків
     features = X.shape[2]   # Визначає кількість ознак
@@ -146,14 +146,14 @@ def train_model(token):
     model.add(LSTM(50, activation='relu', input_shape=(timesteps, features)))
     model.add(Dense(1))
 
-    model.compile(optimizer='adam', loss='mse', metrics=['mean_squared_error'])
+    model.compile(optimizer='adam', loss='mse')
 
     # Навчання моделі
     model.fit(X, y, epochs=50, batch_size=32)
 
     # Прогнозування наступного значення
-    next_time_index = np.array([[len(df)]])  # Наступний часовий крок
-    predicted_price = model.predict(next_time_index)[0]  # Прогноз ціни
+    next_time_index = np.array([[len(df)]])
+    predicted_price = model.predict(next_time_index)[0]
     
     print(f"Predicted next price: {predicted_price}")
 
