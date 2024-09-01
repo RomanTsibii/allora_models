@@ -137,12 +137,12 @@ def train_model(token):
 
     # Prepare data for Linear Regression
     df = df.dropna()  # Loại bỏ các giá trị NaN (nếu có)
-    X = np.array(range(len(df))).reshape(-1, 1)  # Sử dụng chỉ số thời gian làm đặc trưng
-    y = df['close'].values  # Sử dụng giá đóng cửa làm mục tiêu
+    # Припустимо, що X має розміри (num_samples, timesteps)
+    # Додаємо третій вимір для ознак (features)
+    X = np.expand_dims(X, axis=-1)  # Тепер X має розміри (num_samples, timesteps, 1)
 
-    # Khởi tạo mô hình Linear Regression
-    timesteps = X.shape[1]  # Визначає кількість часових кроків у ваших даних
-    features = X.shape[2]   # Визначає кількість ознак (features) у кожному часовому кроці
+    timesteps = X.shape[1]  # Визначає кількість часових кроків
+    features = X.shape[2]   # Тепер features дорівнює 1
 
     model = Sequential()
     model.add(LSTM(50, activation='relu', input_shape=(timesteps, features)))
