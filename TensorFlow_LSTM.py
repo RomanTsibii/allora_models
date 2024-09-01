@@ -122,27 +122,18 @@ def format_data(token):
         print(f"Required columns are missing in {file_path}. Skipping this file.")
 
 def train_model(token):
-    # Load the token price data
-    price_data = pd.read_csv(os.path.join(data_base_path, f"{token.lower()}_price_data.csv"))
-    df = pd.DataFrame()
-
-    # Convert 'date' to datetime
-    price_data["date"] = pd.to_datetime(price_data["date"])
-
-    # Set the date column as the index for resampling
-    price_data.set_index("date", inplace=True)
-
-    # Resample the data to 10-minute frequency and compute the mean price
-    df = price_data.resample('10T').mean()
-
-    # Prepare data for Linear Regression
-    df = df.dropna()  # Loại bỏ các giá trị NaN (nếu có)
-    # Припустимо, що X має розміри (num_samples, timesteps)
-    # Додаємо третій вимір для ознак (features)
+    # Припустимо, що ви вже маєте дані price_data з яких ви створюєте X і y
+    price_data = pd.read_csv(f'/app/data/{token.lower()}_price_data.csv')
+    
+    # Ваш код для підготовки даних X і y
+    X = np.array(range(len(price_data))).reshape(-1, 1)  # Наприклад, ваші X дані
+    y = price_data['close'].values  # Наприклад, ваші y дані
+    
+    # Додаємо третій вимір для LSTM, якщо у вас є тимчасові ряди (часові кроки)
     X = np.expand_dims(X, axis=-1)  # Тепер X має розміри (num_samples, timesteps, 1)
 
-    timesteps = X.shape[1]  # Визначає кількість часових кроків
-    features = X.shape[2]   # Тепер features дорівнює 1
+    timesteps = X.shape[1]
+    features = X.shape[2]
 
     model = Sequential()
     model.add(LSTM(50, activation='relu', input_shape=(timesteps, features)))

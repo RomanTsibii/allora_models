@@ -122,28 +122,19 @@ def format_data(token):
         print(f"Required columns are missing in {file_path}. Skipping this file.")
 
 def train_model(token):
-    # Load the token price data
-    price_data = pd.read_csv(os.path.join(data_base_path, f"{token.lower()}_price_data.csv"))
-    df = pd.DataFrame()
-
-    # Convert 'date' to datetime
-    price_data["date"] = pd.to_datetime(price_data["date"])
-
-    # Set the date column as the index for resampling
-    price_data.set_index("date", inplace=True)
-
-    # Resample the data to 10-minute frequency and compute the mean price
-    df = price_data.resample('10T').mean()
-
-    # Prepare data for Linear Regression
-    df = df.dropna()  # Loại bỏ các giá trị NaN (nếu có)
+    # Завантаження даних для токена (наприклад, ETH)
+    price_data = pd.read_csv(f'/app/data/{token.lower()}_price_data.csv')
     
-    # Припустимо, що X має розміри (num_samples, timesteps)
-    # Додаємо третій вимір для ознак (features)
+    # Ваш код для підготовки даних X і y
+    # Наприклад, якщо X - це часові ряди, створіть X на основі вашого price_data
+    X = np.array(range(len(price_data))).reshape(-1, 1)  # Це лише приклад; налаштуйте під ваші дані
+    y = price_data['close'].values  # Ваші цільові дані
+
+    # Додаємо третій вимір для GRU, якщо ваші дані є одномірними
     X = np.expand_dims(X, axis=-1)  # Тепер X має розміри (num_samples, timesteps, 1)
 
     timesteps = X.shape[1]  # Визначає кількість часових кроків
-    features = X.shape[2]   # Тепер features дорівнює 1
+    features = X.shape[2]   # Визначає кількість ознак
 
     model = Sequential()
     model.add(GRU(50, activation='relu', input_shape=(timesteps, features)))
