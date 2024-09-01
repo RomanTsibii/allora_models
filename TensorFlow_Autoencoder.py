@@ -141,16 +141,20 @@ def train_model(token):
     y = df['close'].values  # Sử dụng giá đóng cửa làm mục tiêu
 
     # Khởi tạo mô hình Linear Regression
+    input_dim = X.shape[1]  # Задає кількість ознак у ваших вхідних даних
+
     model = Sequential()
     model.add(Dense(128, activation='relu', input_shape=(input_dim,)))
     model.add(Dense(64, activation='relu'))
-    model.add(Dense(32, activation='relu'))  # Encoding layer
+    model.add(Dense(32, activation='relu'))  # Шар кодування (encoding layer)
     model.add(Dense(64, activation='relu'))
     model.add(Dense(128, activation='relu'))
     model.add(Dense(input_dim, activation='sigmoid'))
 
     model.compile(optimizer='adam', loss='mse')
-    model.fit(X, y)  # Huấn luyện mô hình
+
+    # Навчання моделі
+    model.fit(X, X, epochs=50, batch_size=32)
 
     # Dự đoán giá tiếp theo
     next_time_index = np.array([[len(df)]])  # Giá trị thời gian tiếp theo

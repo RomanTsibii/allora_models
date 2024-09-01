@@ -141,15 +141,19 @@ def train_model(token):
     y = df['close'].values  # Sử dụng giá đóng cửa làm mục tiêu
 
     # Khởi tạo mô hình Linear Regression
-    model = model = Sequential()
-    model.add(Dense(256, activation='relu', input_shape=(input_dim,)))
-    model.add(Dropout(0.5))
+    input_dim = X.shape[1]  # Задає кількість ознак у ваших вхідних даних
+
+    model = Sequential()
+    model.add(Dense(256, activation='relu', input_shape=(input_dim,)))  # Використання input_dim для визначення розміру вхідних даних
+    model.add(Dropout(0.5))  # Додавання Dropout для запобігання перенавчанню
     model.add(Dense(128, activation='relu'))
     model.add(Dense(64, activation='relu'))
     model.add(Dense(1))
 
     model.compile(optimizer='adam', loss='mae', metrics=['mean_absolute_error'])
-    model.fit(X, y)  # Huấn luyện mô hình
+
+    # Навчання моделі
+    model.fit(X, y, epochs=50, batch_size=32)
 
     # Dự đoán giá tiếp theo
     next_time_index = np.array([[len(df)]])  # Giá trị thời gian tiếp theo

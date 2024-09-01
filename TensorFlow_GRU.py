@@ -141,12 +141,17 @@ def train_model(token):
     y = df['close'].values  # Sử dụng giá đóng cửa làm mục tiêu
 
     # Khởi tạo mô hình Linear Regression
+    timesteps = X.shape[1]  # Визначає кількість часових кроків у ваших даних
+    features = X.shape[2]   # Визначає кількість ознак (features) у кожному часовому кроці
+
     model = Sequential()
     model.add(GRU(50, activation='relu', input_shape=(timesteps, features)))
     model.add(Dense(1))
 
     model.compile(optimizer='adam', loss='mse', metrics=['mean_squared_error'])
-    model.fit(X, y)  # Huấn luyện mô hình
+
+    # Навчання моделі
+    model.fit(X, y, epochs=50, batch_size=32)
 
     # Dự đoán giá tiếp theo
     next_time_index = np.array([[len(df)]])  # Giá trị thời gian tiếp theo
