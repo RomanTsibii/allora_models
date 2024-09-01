@@ -2,7 +2,9 @@ import os
 import pandas as pd
 from datetime import datetime, timedelta
 import numpy as np
+import torch
 import torch.nn as nn
+import torch.optim as optim
 from config import data_base_path
 import random
 import requests
@@ -108,12 +110,13 @@ def format_data(token):
         print(f"Required columns are missing in {file_path}. Skipping this file.")
 
 def train_model(token):
+    # Завантаження даних
     price_data = pd.read_csv(os.path.join(data_base_path, f"{token.lower()}_price_data.csv"))
 
     price_data["date"] = pd.to_datetime(price_data["date"])
     price_data.set_index("date", inplace=True)
 
-    df = price_data.resample('10T').mean()
+    df = price_data.resample('10min').mean()
     df = df.dropna()  # Видалити NaN
 
     X = np.array(range(len(df))).reshape(-1, 1)
@@ -123,24 +126,49 @@ def train_model(token):
 
     # Об'єднуємо обидві ознаки в одну матрицю
     X_combined = np.hstack([X, X2])
-
     y = df['close'].values
 
-    model = model = nn.Sequential(
+    # Перетворюємо дані на тензори PyTorch
+    X_tensor = torch.tensor(X_combined, dtype=torch.float32)
+    y_tensor = torch.tensor(y, dtype=torch.float32).view(-1, 1)
+
+    # Визначення розмірності вхідних даних
+    input_dim = X_tensor.shape[1]
+
+    # Визначення моделі
+    model = nn.Sequential(
         nn.Linear(input_dim, 128),
         nn.ReLU(),
         nn.Linear(128, 64),
         nn.ReLU(),
         nn.Linear(64, 1)
     )
-    model.fit(X_combined, y)
 
-    next_time_index = np.array([[len(df)]])
-    next_time_index2 = next_time_index * (1 + np.random.uniform(0.01, 0.05, size=next_time_index.shape))
+    # Визначення функції втрат і оптимізатора
+    criterion = nn.MSELoss()
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-    next_time_combined = np.hstack([next_time_index, next_time_index2])
-    predicted_price = model.predict(next_time_combined)[0]
+    # Навчання моделі
+    epochs = 100
+    for epoch in range(epochs):
+        model.train()
+        optimizer.zero_grad()
+        outputs = model(X_tensor)
+        loss = criterion(outputs, y_tensor)
+        loss.backward()
+        optimizer.step()
 
+    # Прогнозування
+    model.eval()
+    with torch.no_grad():
+        next_time_index = np.array([[len(df)]])
+        next_time_index2 = next_time_index * (1 + np.random.uniform(0.01, 0.05, size=next_time_index.shape))
+
+        next_time_combined = np.hstack([next_time_index, next_time_index2])
+        next_time_tensor = torch.tensor(next_time_combined, dtype=torch.float32)
+        predicted_price = model(next_time_tensor).item()
+
+    # Флуктуація ціни
     fluctuation_range = 0.001 * predicted_price
     min_price = predicted_price - fluctuation_range
     max_price = predicted_price + fluctuation_range
