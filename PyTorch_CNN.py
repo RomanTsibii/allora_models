@@ -126,12 +126,15 @@ def train_model(token):
 
     y = df['close'].values
 
-    model = model = nn.Sequential(
-        nn.Linear(input_dim, 128),
+    model = nn.Sequential(
+        nn.Conv2d(in_channels=1, out_channels=32, kernel_size=3, stride=1, padding=1),
         nn.ReLU(),
-        nn.Linear(128, 64),
+        nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=1, padding=1),
         nn.ReLU(),
-        nn.Linear(64, 1)
+        nn.Flatten(),
+        nn.Linear(64 * 28 * 28, 128),
+        nn.ReLU(),
+        nn.Linear(128, 10)
     )
     model.fit(X_combined, y)
 
